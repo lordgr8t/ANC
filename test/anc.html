@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аудио экранирование</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Аудио экранирование</h1>
+    <button id="play">Аудиофайл</button>
+    <button id="playInverted">Экранированный файл</button>
+    <button id="playBoth">Воспроизвести одновременно</button>
+    <input id="delay" type="number" value="0" placeholder="Задержка в ms">
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let originalBuffer;
+        let invertedBuffer;
+
+    
+        async function loadAudio() {
+        const response = await fetch('vinil.mp3'); 
+        const arrayBuffer = await response.arrayBuffer();
+        originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+      
+        invertedBuffer = audioContext.createBuffer(originalBuffer.numberOfChannels, originalBuffer.length, originalBuffer.sampleRate);
+        for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
+            const inputData = originalBuffer.getChannelData(channel);
+            const outputData = invertedBuffer.getChannelData(channel);
+            for (let i = 0; i < inputData.length; i++) {
+                outputData[i] = -inputData[i]; 
+            }
+        }
+    }
+
+    function playOriginal() {
+        const source = audioContext.createBufferSource();
+        source.buffer = originalBuffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+    }
+
+    function playInverted() {
+        const source = audioContext.createBufferSource();
+        source.buffer = invertedBuffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+    }
+
+    function playBoth() {
+        playOriginal();
+         let delay = document.getElementById('delay').value;
+         // alert(delay)
+        setTimeout(() => {
+            playInverted();
+        }, delay);
+        
+    }
+
+    document.getElementById('play').addEventListener('click', playOriginal);
+    document.getElementById('playInverted').addEventListener('click', playInverted);
+    document.getElementById('playBoth').addEventListener('click', playBoth);
+
+    loadAudio().catch(err => console.error('Ошибка загрузки аудиофайла:', err));
+</script>
+
+</body>
+</html>
